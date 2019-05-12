@@ -2,19 +2,19 @@ from Crypto.Cipher import AES
 import base64
 
 '''
-  CGV reservation web service use AES which is a kind of symetric key encryption algorithm in order to securely pass parameters containing private or even confidential information when client makes a reservation for a movie on the website. 
+  CGV web service use AES which is a kind of symetric key encryption algorithm in order to securely pass parameters containing private or even confidential information when client makes a reservation for a movie on the website. 
   of particular interest is how the encryption algorithm is implemented. .net javascript framework has been so used to implement the encryption that it was not difficult to find out detailed specification of the AES algorithm with the microsoft .net framework official document and with reverse enginearing client-side script.
-  AES algorithm cannot be competible of communication among different services without any specification of implementation detail such as block size, encryption key, block cipher modes of operation, initial vector, padding method etc.
+  AES algorithm cannot be competible of communication among different services without any specification of implementation detail such as block size, encryption key, block cipher modes of operation, initial vector and padding method etc.
   the CGV AES detailed specification is the table below.
 
   block size        : 16byte (128 bits)
-  key size          : 16byte (same as block size)
+  key size          : 32byte (256 bits)
   encryption key    : VBA1NUS6T8UID2I6OBF7158899CT4F3C
   initial_vector    : VBA1NUS6T8UID2I6
   block cipher mode : CBC
   encoding          : utf8
   wrapper           : base64
-  padding           : PKCS7 (padding with sequence of bytes, each of which is equal to the size of padding string added)
+  padding           : PKCS7 (padding with sequence of bytes, each of which is equal to the size of padding bytes added)
 
 
 '''
@@ -25,18 +25,19 @@ cgv_aes_key = bytes([86, 66, 65, 49, 78, 85, 83, 54, 84, 56, 85, 73, 68, 50, 73,
 cgv_aes_IV = bytes([86, 66, 65, 49, 78, 85, 83, 54, 84, 56, 85, 73, 68, 50, 73, 54])
 
 class cgv_crypto :
-  def __init__(self, key, IV, mode) :
-    self.BLOCK_SIZE = 16
+  def __init__(self, block_size=16, key=cgv_aes_key, IV=cgv_aes_IV, mode=AES.MODE_CBC) :
+    self.BLOCK_SIZE = block_size
     self.encryption_mode = mode
     self.mode = mode
     self.key = key
     self.initial_vector = IV
     self.encryptor = self.make_encryptor()
 
-  #PKCS7 padding algorithm
+  #PKCS7 padding method
   def pad(self, data) :
-    padding = bytes([(self.BLOCK_SIZE-len(data))%self.BLOCK_SIZE])
-    padded_data = (data+padding*16)[:16]
+    padding_value = (self.BLOCK_SIZE-len(data))%self.BLOCK_SIZE
+    padded_length = len(data) + padding_value
+    padded_data = (data+bytes([padding_value])*self.BLOCK_SIZE)[:padded_length]
     return padded_data
 
   def make_encryptor(self) :
@@ -50,6 +51,7 @@ class cgv_crypto :
     encrypted_text = self.encryptor(plain_text)
     return encrypted_text
 
+#this is an usage example
 def main() :
   crypto = cgv_crypto(key=cgv_aes_key, IV=cgv_aes_IV, mode=AES.MODE_CBC)
   enc_txt = crypto.encrypt(correct_input)
