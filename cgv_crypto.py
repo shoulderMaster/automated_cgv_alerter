@@ -49,7 +49,7 @@ class cgv_crypto :
     
   def encrypt(self, plain_text) :
     encrypted_text = self.encryptor(plain_text)
-    return encrypted_text
+    return encrypted_text.decode("utf8")
 
 #this is an usage example
 def main() :
