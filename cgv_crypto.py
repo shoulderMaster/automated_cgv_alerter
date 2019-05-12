@@ -50,13 +50,3 @@ class cgv_crypto :
   def encrypt(self, plain_text) :
     encrypted_text = self.encryptor(plain_text)
     return encrypted_text.decode("utf8")
-
-#this is an usage example
-def main() :
-  crypto = cgv_crypto(key=cgv_aes_key, IV=cgv_aes_IV, mode=AES.MODE_CBC)
-  enc_txt = crypto.encrypt(correct_input)
-  print("encrypted text : %s" % enc_txt)
-  print("correct output : %s" % correct_output)
-  print("input : %s" % correct_input)
-
-main()
