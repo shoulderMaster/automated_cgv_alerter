@@ -3,49 +3,138 @@ import json
 import xmltodict
 import os
 import time
+from cgv_crypto import CGV_AES
 
-curl_cmd = """curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_002_PRIME_ZONE_LANGUAGE' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.108 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","Language":"zqWM417GS6dxQ7CIf65+iA==","TheaterCd":"2ziBKjUqqpsaZ8ii0eHHyg==","PlayYMD":"%s","ScreenCd":"DTOy6NZjL7Nd6/QAUh7m7g==","PlayNum":"%s"}' --compressed 2>/dev/null ;"""
+seat_info_cmd = """curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_002_PRIME_ZONE_LANGUAGE' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.108 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","Language":"zqWM417GS6dxQ7CIf65+iA==","TheaterCd":"%s","PlayYMD":"%s","ScreenCd":"%s","PlayNum":"%s"}' --compressed 2>/dev/null ;"""
 
-starting_time={
-        7:"H+diKGhh/2VXj/6Ikiev8A==",
-        10:"eUHdeAgG0OAi96HPh0I1jQ==",
-        13:"hlrIVsrgDYMr7PQdmwAA4w==",
-        17:"K69H87N+CcalH4eFao/hAQ==",
-        20:"GQ4XBvPgo294+v/kGdDx+Q==",
-        24:"LP1Md9chfBBpfDnclOyDHw=="
+time_table_cmd = """
+curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_TIME_TABLE' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","MovieGroupCd":"%s","TheaterCd":"%s","PlayYMD":"%s","MovieType_Cd":"/Saxvehmz4RPKZDKNMvSKQ==","Subtitle_CD":"nG6tVgEQPGU2GvOIdnwTjg==","SOUNDX_YN":"nG6tVgEQPGU2GvOIdnwTjg==","Third_Attr_CD":"nG6tVgEQPGU2GvOIdnwTjg==","IS_NORMAL":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' --compressed 2>/dev/null
+"""
+
+date_table_cmd = """
+curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_SCHEDULE_TOTAL_PLAY_YMD' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","TheaterCd":"%s","ISNormal":"3y+GIXzg3xKpOjlKjH8+Fg==","MovieGroupCd":"%s","ScreenRatingCd":"nG6tVgEQPGU2GvOIdnwTjg==","MovieTypeCd":"/Saxvehmz4RPKZDKNMvSKQ==","Subtitle_CD":"nG6tVgEQPGU2GvOIdnwTjg==","SOUNDX_YN":"nG6tVgEQPGU2GvOIdnwTjg==","Third_Attr_CD":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' --compressed 2>/dev/null
+"""
+
+theater_dict = {
+    "왕십리 CGV" : "0074",
+    "용산아이파크몰 CGV" :"0013"
 }
 
-YMD={
-        510 :"K49Pa7i2tgGLdOsDEUNQ0g=="
-#        511 :"+cSU7ax/NJV5XNsYM3QrKA==",
-#        512 :"JFQ+RQXJ8Uin2E/NDXx6+Q==",
-#        513 :"8zytF40Cbdzd+E+B/DtRwQ=="
-        }
+movie_dict = {
+    "어벤져스 : 엔드게임" : "20019245",
+    "명탐정 피카츄" : "20019134"
+}
+
+class MovieInfo() :
+    def __init__(self, info, params) :
+        self.start_time = info[0]
+        self.end_time = info[1]
+        self.screen_name = info[2]
+        self.params = params
+
+def print_dict(data, depth) :
+    if type(data) == list :
+        for idx, item in enumerate(data) :
+            print("   "*depth+"--", "item %d" % idx)
+            print_dict(item, depth+1)
+    elif type(data) == dict :
+        for key in data.keys() :
+            print("   "*depth+"--", key)
+            print_dict(data[key], depth+1)
+    else :
+        print("   "*depth+"--", data)
+
 
 class CGVSeatInfo() :
 
   def __init__(self) :
     self.request_cmd_dict = dict()
-    for ymd in YMD.keys() :
-        for start in starting_time.keys() :
-            datetime = "%d월 %d일 %d시" % (ymd//100, ymd%100, start)
-            cur_req_cmd = curl_cmd % (YMD[ymd], starting_time[start])
-            self.request_cmd_dict[datetime] = cur_req_cmd
+    self.encrypt = CGV_AES().encrypt
     self.royal_seats = dict()
     self.reservation_info = dict()
     self.seat_str = dict()
-    for datetime in self.request_cmd_dict.keys():
-      self.royal_seats[datetime] = []
-      self.reservation_info[datetime] = []
-      self.seat_str[datetime] = []
+    self.theater = ""
+    self.movie = ""
+    self._input_movie()
+    self._input_theater()
+    self.schedule = {}
+    self._get_date_schedule()
+    self.max_row = 0
+    self.max_col = 0
+
+  def encrypt_tuple(self, data) :
+      t = tuple([self.encrypt(i) for i in data])
+      return t
+
+  def _input_theater(self) :
+      print("select theater")
+      for idx, theater in enumerate(theater_dict.keys()) :
+          print("  %d : %s" % (idx+1, theater))
+      idx = int(input("choose number : "))-1
+      if idx in range(0, len(theater_dict.keys())) :
+          self.theater = theater_dict[list(theater_dict.keys())[idx]]
+      else :
+          print("invailed input value")
+          exit(-1)
+
+  def _input_movie(self) :
+      print("select movie")
+      for idx, movie in enumerate(movie_dict.keys()) :
+          print("  %d : %s" % (idx+1, movie))
+      idx = int(input("choose number : "))-1
+      if idx in range(0, len(movie_dict.keys())) :
+          self.movie = movie_dict[list(movie_dict.keys())[idx]]
+      else :
+          print("invailed input value")
+          exit(-1)
+
+  def _get_date_schedule(self) :
+    params = (self.theater, self.movie)
+    req_cmd = date_table_cmd % self.encrypt_tuple(params)
+    xml = self._get_xml_with_cmd(req_cmd)
+    data = self._xml_to_dict(xml)["CSchedule"]["PlayDays"]["CPlayDay"]
+    for dict_item in data :
+        self.schedule[dict_item["PLAY_YMD"]] = {"FORMAT_DATE": dict_item["FORMAT_DATE"]}
+
+    for i, date in enumerate(self.schedule.keys()) :
+        params = (self.movie, self.theater, date)
+        req_cmd = time_table_cmd % self.encrypt_tuple(params)
+        xml = self._get_xml_with_cmd(req_cmd)
+        data = self._xml_to_dict(xml)["NewDataSet"]["Table"]
+        time_schedule = []
+        for j, item in enumerate(data) :
+            t=(i*len(data) + j+1)/((len(self.schedule.keys()))*(len(data)))
+            print("\r예약 가능 날짜 검색하는중... ["+"#"*int(t*20)+"-"*(20-int(t*20))+("]%.2f %%" % (t*100)), end="")
+            play_num = item["PLAY_NUM"]
+            start_time = item["PLAY_START_TM"]
+            end_time = item["PLAY_END_TM"]
+            screen_code = item["SCREEN_CD"]
+            screen_name = item["SCREEN_NM"]
+            params = self.encrypt_tuple((self.theater, date, screen_code, play_num))
+            info = (start_time, end_time, screen_name)
+            time_schedule.append(MovieInfo(info, params))
+        self.schedule[date]["TIME_TABLE"] = time_schedule
+        time.sleep(0.5)
+    print()
+    for i in self.schedule.keys() :
+        print(" ", self.schedule[i]["FORMAT_DATE"])
+    if(input("위 날짜 크롤링 ㄱ? y/n ") != "y") :
+        exit(-1)
+
 
   def update_seat_info(self) :
-    for datetime in self.request_cmd_dict.keys() :
-      time.sleep(0.5)
-      request_cmd = self.request_cmd_dict[datetime]
-      seat_info_list = self.reservation_info[datetime] = self.get_seat_info_with_cmd(request_cmd)
-      self.royal_seats[datetime] = self.get_royal_seats(seat_info_list)
-      self.seat_str[datetime] = self.get_seat_info_str(seat_info_list)
+    for i, datetime in enumerate(self.schedule.keys()) :
+      for j, movie in enumerate(self.schedule[datetime]["TIME_TABLE"]) :
+        t=(i*len(self.schedule[datetime]["TIME_TABLE"]) + j+1)/((len(self.schedule.keys()))*len(self.schedule[datetime]["TIME_TABLE"]))
+        print("\r존좋자리 검색중... ["+"#"*int(t*20)+"-"*(20-int(t*20))+("]%.2f %%" % (t*100)), end="")
+        request_cmd = seat_info_cmd % movie.params
+        seat_info_list = self.reservation_info[datetime] = self.get_seat_info_with_cmd(request_cmd)
+
+        key = "%s %s %s ~ %s" % (movie.screen_name, self.schedule[datetime]["FORMAT_DATE"], movie.start_time, movie.end_time)
+        self.royal_seats[key] = self.get_royal_seats(seat_info_list)
+        self.seat_str[key] = self.get_seat_info_str(seat_info_list)
+        time.sleep(0.5)
+    print()
 
   def get_royal_seats(self, seat_info_list) :
     royal_seats = []
@@ -58,27 +147,44 @@ class CGVSeatInfo() :
 
     return royal_seats
 
-  def get_seat_info_with_cmd(self, request_cmd) :
+  def _get_xml_with_cmd(self, request_cmd) :
     req_str = subprocess.check_output(request_cmd, shell=True)
     raw_json_data = json.loads(req_str)
-    seat_info_xml = raw_json_data["d"]["data"]["DATA"]
-    new_data_set = json.loads(json.dumps(xmltodict.parse(seat_info_xml), indent=4))["NewDataSet"]
+    xml = raw_json_data["d"]["data"]["DATA"]
+    return xml
+
+  def _xml_to_dict(self, xml_str) :
+    dict_to_ret = json.loads(json.dumps(xmltodict.parse(xml_str), indent=4))
+    return dict_to_ret
+
+  def get_seat_info_with_cmd(self, request_cmd) :
+    xml_str = self._get_xml_with_cmd(request_cmd)
+    new_data_set = self._xml_to_dict(xml_str)["NewDataSet"]
     if "SEAT_INFO" in new_data_set.keys() :
       seat_info_dict = new_data_set["SEAT_INFO"]
     else :
       return None
     seat_info_list = [(int(seat["LOC_X"]), int(seat["LOC_Y"]), seat["SEAT_STATE"]) for seat in seat_info_dict]
+    self.find_max_row_col(seat_info_list)
     return seat_info_list
+
+  def find_max_row_col(self, seat_list) :
+    if self.max_col == 0 and self.max_row == 0 :
+      for item in seat_list :
+          if item[0] > self.max_col :
+              self.max_col = item[0]
+          if item[1] > self.max_row :
+              self.max_row = item[1]
 
   def get_seat_info_str(self, seat_info_list) :
     if seat_info_list == None :
       return ""
-    max_row = 13
-    max_col = 36
+    max_row = self.max_row
+    max_col = self.max_col
 
-    col_info = "".join(["%3d" % i for i in range(1, max_col)])
+    col_info = "".join(["%3d" % i for i in range(1, max_col+1)])
     row_info = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    seat_info = [["   " for i in range(1, 36)] for j in range(max_row)]
+    seat_info = [["   " for i in range(max_col)] for j in range(max_row)]
 
     for seat_item in seat_info_list :
       if seat_item[2] == "N" :
@@ -109,10 +215,11 @@ class CGVSeatInfo() :
     print(str_to_print)
 
   def isFuckingAbsolutelySupurPowerfulDefinitlySuccessfulRoyalSeat(self, seat_info) :
-    return 36/2 - 7 < seat_info[0] < 36/2 + 7 and 4 < seat_info[1] < 20
+    return self.max_col/4 < seat_info[0] < self.max_col/4*3 and self.max_row/2 < seat_info[1]
 
 def main() :
   cgv_crawler = CGVSeatInfo()
+
   while(1) :
     cgv_crawler.printRoyalSeat()
     time.sleep(3)
