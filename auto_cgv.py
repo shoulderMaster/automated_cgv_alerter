@@ -17,7 +17,8 @@ curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_SCHEDULE_TOTAL_PLAY_Y
 
 theater_dict = {
     "왕십리 CGV" : "0074",
-    "용산아이파크몰 CGV" :"0013"
+    "용산아이파크몰 CGV" :"0013",
+    "gwang gyo CGV" :"0257"
 }
 
 movie_dict = {
@@ -35,14 +36,14 @@ class MovieInfo() :
 def print_dict(data, depth) :
     if type(data) == list :
         for idx, item in enumerate(data) :
-            print("   "*depth+"--", "item %d" % idx)
+            print("   "*depth+"+-", "item %d" % idx)
             print_dict(item, depth+1)
     elif type(data) == dict :
         for key in data.keys() :
-            print("   "*depth+"--", key)
+            print("   "*depth+"+-", key)
             print_dict(data[key], depth+1)
     else :
-        print("   "*depth+"--", data)
+        print("   "*depth+"+-", data)
 
 
 class CGVSeatInfo() :
@@ -149,7 +150,7 @@ class CGVSeatInfo() :
 
   def _get_xml_with_cmd(self, request_cmd) :
     req_str = subprocess.check_output(request_cmd, shell=True)
-    raw_json_data = json.loads(req_str)
+    raw_json_data = json.loads(req_str.decode("utf-8"))
     xml = raw_json_data["d"]["data"]["DATA"]
     return xml
 

@@ -11,9 +11,10 @@ not difficult to find out detailed specification of the AES algorithm with the
 microsoft .net framework official document and with reverse enginearing clien-
 t-side script.
   AES algorithm cannot be competible of communication among different services
-without any specification of implementation detail such as block size, encryp-
+without any specification of implementation details such as block size, encryp-
 tion key, block cipher modes of operation, initial vector, padding method and
 etc.
+
   the detailed CGV AES specification is described as the table below.
 
   block size        : 16byte (128 bits)
