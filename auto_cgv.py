@@ -5,25 +5,51 @@ import os
 import time
 from cgv_crypto import CGV_AES
 
+theater_info_cmd = """
+curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_SCHEDULE_TOTAL_THEATER' \
+  -H 'Connection: keep-alive' \
+  -H 'Accept: application/json, text/javascript, */*; q=0.01' \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36' \
+  -H 'Content-Type: application/json' \
+  -H 'Origin: http://ticket.cgv.co.kr' \
+  -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' \
+  -H 'Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7' \
+  -H 'Cookie: _ga=GA1.3.1344566613.1588532313; WMONID=QXmILaptc-E; ASP.NET_SessionId=cgsam1aqfyaysbzuuzjd5zdh; _gid=GA1.3.1731533099.1588785081; CgvPopAd-=; _gat_UA-47951671-5=1; _gat_UA-47951671-7=1; _gat_UA-47126437-1=1' \
+  --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","PlayYMD":"nG6tVgEQPGU2GvOIdnwTjg==","ISNormal":"3y+GIXzg3xKpOjlKjH8+Fg==","MovieGroupCd":"%s","MovieTypeCd":"nG6tVgEQPGU2GvOIdnwTjg==","Subtitle_CD":"nG6tVgEQPGU2GvOIdnwTjg==","SOUNDX_YN":"nG6tVgEQPGU2GvOIdnwTjg==","Third_Attr_CD":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' \
+  --compressed \
+  --insecure 2>/dev/null;
+"""
+
+
+movie_info_cmd = """curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_SCHEDULE_TOTAL_DEFAULT' -H 'Connection: keep-alive' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36' -H 'Content-Type: application/json' -H 'Origin: http://ticket.cgv.co.kr' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7' -H 'Cookie: _ga=GA1.3.1344566613.1588532313; WMONID=QXmILaptc-E; ASP.NET_SessionId=cgsam1aqfyaysbzuuzjd5zdh; _gid=GA1.3.1731533099.1588785081; CgvPopAd-=; _gat_UA-47951671-5=1; _gat_UA-47951671-7=1; _gat_UA-47126437-1=1' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","ISNormal":"3y+GIXzg3xKpOjlKjH8+Fg==","Screen_Rating_Cd":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' --compressed --insecure 2>/dev/null; """
+
 seat_info_cmd = """curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_002_PRIME_ZONE_LANGUAGE' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.108 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","Language":"zqWM417GS6dxQ7CIf65+iA==","TheaterCd":"%s","PlayYMD":"%s","ScreenCd":"%s","PlayNum":"%s"}' --compressed 2>/dev/null ;"""
 
 time_table_cmd = """
-curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_TIME_TABLE' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","MovieGroupCd":"%s","TheaterCd":"%s","PlayYMD":"%s","MovieType_Cd":"/Saxvehmz4RPKZDKNMvSKQ==","Subtitle_CD":"nG6tVgEQPGU2GvOIdnwTjg==","SOUNDX_YN":"nG6tVgEQPGU2GvOIdnwTjg==","Third_Attr_CD":"nG6tVgEQPGU2GvOIdnwTjg==","IS_NORMAL":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' --compressed 2>/dev/null
+curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_TIME_TABLE' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","MovieGroupCd":"%s","TheaterCd":"%s","PlayYMD":"%s","MovieType_Cd":"nG6tVgEQPGU2GvOIdnwTjg==","Subtitle_CD":"nG6tVgEQPGU2GvOIdnwTjg==","SOUNDX_YN":"nG6tVgEQPGU2GvOIdnwTjg==","Third_Attr_CD":"nG6tVgEQPGU2GvOIdnwTjg==","IS_NORMAL":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' --compressed 2>/dev/null
 """
 
 date_table_cmd = """
-curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_SCHEDULE_TOTAL_PLAY_YMD' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' -H 'Origin: http://ticket.cgv.co.kr' -H 'X-Requested-With: XMLHttpRequest' -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36' -H 'Content-Type: application/json' --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","TheaterCd":"%s","ISNormal":"3y+GIXzg3xKpOjlKjH8+Fg==","MovieGroupCd":"%s","ScreenRatingCd":"nG6tVgEQPGU2GvOIdnwTjg==","MovieTypeCd":"/Saxvehmz4RPKZDKNMvSKQ==","Subtitle_CD":"nG6tVgEQPGU2GvOIdnwTjg==","SOUNDX_YN":"nG6tVgEQPGU2GvOIdnwTjg==","Third_Attr_CD":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' --compressed 2>/dev/null
+curl 'http://ticket.cgv.co.kr/CGV2011/RIA/CJ000.aspx/CJ_HP_SCHEDULE_TOTAL_PLAY_YMD' \
+  -H 'Connection: keep-alive' \
+  -H 'Accept: application/json, text/javascript, */*; q=0.01' \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36' \
+  -H 'Content-Type: application/json' \
+  -H 'Origin: http://ticket.cgv.co.kr' \
+  -H 'Referer: http://ticket.cgv.co.kr/Reservation/Reservation.aspx?MOVIE_CD=&MOVIE_CD_GROUP=&PLAY_YMD=&THEATER_CD=&PLAY_NUM=&PLAY_START_TM=&AREA_CD=&SCREEN_CD=&THIRD_ITEM=' \
+  -H 'Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7' \
+  -H 'Cookie: _ga=GA1.3.1344566613.1588532313; WMONID=QXmILaptc-E; ASP.NET_SessionId=cgsam1aqfyaysbzuuzjd5zdh; _gid=GA1.3.1731533099.1588785081; CgvPopAd-=' \
+  --data-binary '{"REQSITE":"x02PG4EcdFrHKluSEQQh4A==","TheaterCd":"%s","ISNormal":"3y+GIXzg3xKpOjlKjH8+Fg==","MovieGroupCd":"%s","ScreenRatingCd":"nG6tVgEQPGU2GvOIdnwTjg==","MovieTypeCd":"nG6tVgEQPGU2GvOIdnwTjg==","Subtitle_CD":"nG6tVgEQPGU2GvOIdnwTjg==","SOUNDX_YN":"nG6tVgEQPGU2GvOIdnwTjg==","Third_Attr_CD":"nG6tVgEQPGU2GvOIdnwTjg==","Language":"zqWM417GS6dxQ7CIf65+iA=="}' \
+  --compressed \
+  --insecure 2>/dev/null
 """
 
-theater_dict = {
-    "왕십리 CGV" : "0074",
-    "용산아이파크몰 CGV" :"0013",
-    "gwang gyo CGV" :"0257"
-}
+area_dict = {
 
-movie_dict = {
-    "어벤져스 : 엔드게임" : "20019245",
-    "명탐정 피카츄" : "20019134"
+
+
 }
 
 class MovieInfo() :
@@ -69,25 +95,42 @@ class CGVSeatInfo() :
 
   def _input_theater(self) :
       print("select theater")
-      for idx, theater in enumerate(theater_dict.keys()) :
+      theater_list = self._get_theater_list(self.movie)
+      for idx, (theater, _, _) in enumerate(theater_list) :
           print("  %d : %s" % (idx+1, theater))
       idx = int(input("choose number : "))-1
-      if idx in range(0, len(theater_dict.keys())) :
-          self.theater = theater_dict[list(theater_dict.keys())[idx]]
-      else :
-          print("invailed input value")
-          exit(-1)
+      self.theater = theater_list[idx][1]
 
   def _input_movie(self) :
+      movie_list = self._get_movie_list()
       print("select movie")
-      for idx, movie in enumerate(movie_dict.keys()) :
+      for idx, (movie, _) in enumerate(movie_list) :
           print("  %d : %s" % (idx+1, movie))
       idx = int(input("choose number : "))-1
-      if idx in range(0, len(movie_dict.keys())) :
-          self.movie = movie_dict[list(movie_dict.keys())[idx]]
-      else :
-          print("invailed input value")
-          exit(-1)
+      print(movie_list)
+      self.movie = movie_list[idx][1]
+
+  def _get_movie_list(self) :
+    xml = self._get_xml_with_cmd(movie_info_cmd)
+    data = self._xml_to_dict(xml)["CSchedule"]["Movies"]["CMovie"]
+    for item in data :
+        print(item)
+    data = list(set([(entry["GROUP_NM"], entry["GROUP_CD"]) for entry in data]))
+    return data
+
+
+  def _get_theater_list(self, movie_cd) :
+    req_cmd = theater_info_cmd % self.encrypt(movie_cd)
+    xml = self._get_xml_with_cmd(req_cmd)
+    data = self._xml_to_dict(xml)["CSchedule"]["Theaters"]["CTheater"]
+    theater_list = []
+    for entry in data :
+        theater_nm = entry["THEATER_NM"]
+        theater_cd = entry["THEATER_CD"]
+        area_cd = entry["AREA_CD"]
+        theater_list.append((theater_nm, theater_cd, area_cd))
+    return theater_list
+
 
   def _get_date_schedule(self) :
     params = (self.theater, self.movie)
@@ -103,14 +146,24 @@ class CGVSeatInfo() :
         xml = self._get_xml_with_cmd(req_cmd)
         data = self._xml_to_dict(xml)["NewDataSet"]["Table"]
         time_schedule = []
-        for j, item in enumerate(data) :
-            t=(i*len(data) + j+1)/((len(self.schedule.keys()))*(len(data)))
-            print("\r예약 가능 날짜 검색하는중... ["+"#"*int(t*20)+"-"*(20-int(t*20))+("]%.2f %%" % (t*100)), end="")
-            play_num = item["PLAY_NUM"]
-            start_time = item["PLAY_START_TM"]
-            end_time = item["PLAY_END_TM"]
-            screen_code = item["SCREEN_CD"]
-            screen_name = item["SCREEN_NM"]
+        if type(data) != dict :
+            for j, item in enumerate(data) :
+                t=(i*len(data) + j+1)/((len(self.schedule.keys()))*(len(data)))
+                print("\r예약 가능 날짜 검색하는중... ["+"#"*int(t*20)+"-"*(20-int(t*20))+("]%.2f %%" % (t*100)), end="")
+                play_num = item["PLAY_NUM"]
+                start_time = item["PLAY_START_TM"]
+                end_time = item["PLAY_END_TM"]
+                screen_code = item["SCREEN_CD"]
+                screen_name = item["SCREEN_NM"]
+                params = self.encrypt_tuple((self.theater, date, screen_code, play_num))
+                info = (start_time, end_time, screen_name)
+                time_schedule.append(MovieInfo(info, params))
+        else :
+            play_num = data["PLAY_NUM"]
+            start_time = data["PLAY_START_TM"]
+            end_time = data["PLAY_END_TM"]
+            screen_code = data["SCREEN_CD"]
+            screen_name = data["SCREEN_NM"]
             params = self.encrypt_tuple((self.theater, date, screen_code, play_num))
             info = (start_time, end_time, screen_name)
             time_schedule.append(MovieInfo(info, params))
@@ -143,14 +196,14 @@ class CGVSeatInfo() :
     if seat_info_list == None :
       return None
     for seat_item in seat_info_list :
-      if seat_item[2] == "Y" and self.isFuckingAbsolutelySupurPowerfulDefinitlySuccessfulRoyalSeat(seat_item) :
+      if seat_item[2] == "Y" and self.isAbsolutelySupurPowerfulDefinitlySuccessfulRoyalSeat(seat_item) :
         royal_seats.append(seat_item)
 
     return royal_seats
 
   def _get_xml_with_cmd(self, request_cmd) :
     req_str = subprocess.check_output(request_cmd, shell=True)
-    raw_json_data = json.loads(req_str.decode("utf-8"))
+    raw_json_data = json.loads(req_str.decode("utf8"))
     xml = raw_json_data["d"]["data"]["DATA"]
     return xml
 
@@ -215,7 +268,7 @@ class CGVSeatInfo() :
     str_to_print = "\n".join([key+"\n"+self.seat_str[key] for idx, key in enumerate(self.seat_str.keys()) if royal_seat_cnt[idx] > 0])
     print(str_to_print)
 
-  def isFuckingAbsolutelySupurPowerfulDefinitlySuccessfulRoyalSeat(self, seat_info) :
+  def isAbsolutelySupurPowerfulDefinitlySuccessfulRoyalSeat(self, seat_info) :
     return self.max_col/4 < seat_info[0] < self.max_col/4*3 and self.max_row/2 < seat_info[1]
 
 def main() :
