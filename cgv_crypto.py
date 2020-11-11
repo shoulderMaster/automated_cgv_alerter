@@ -2,18 +2,6 @@ from Crypto.Cipher import AES
 import base64
 
 '''
-  CGV web service use AES which is a kind of symetric key encryption algorithm
-in order to securely pass parameters containing private or even confidential
-information when client make a reservation for a movie on the website.
-  of particular interest is how the encryption algorithm is implemented. .net
-javascript framework had been used to implement the encryption so that it was
-not difficult to find out detailed specification of the AES algorithm with the
-microsoft .net framework official document and with reverse enginearing clien-
-t-side script.
-  AES algorithm cannot be competible of communication among different services
-without any specification of implementation details such as block size, encryp-
-tion key, block cipher modes of operation, initial vector, padding method and
-etc.
 
   the detailed CGV AES specification is described as the table below.
 
